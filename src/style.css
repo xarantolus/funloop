@@ -50,7 +50,7 @@ h1 {
 
 .cm-scroller {
   overflow: auto;
-  min-height: 500px;
+  min-height: 350px;
   min-width: 800px;
 }
 

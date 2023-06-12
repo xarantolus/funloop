@@ -25,7 +25,8 @@ export function transformCode(code: string) {
 					body.replaceWith(t.blockStatement([]));
 				}
 			} catch (e) {
-				// Ignore, some code is not supported (e.g. if statements in a for loop body)
+				// Some code is not supported (e.g. if statements in a for loop body)
+				console.log("Cannot transform for statement: " + e);
 			}
 		},
 		WhileStatement(path) {
@@ -42,26 +43,54 @@ export function transformCode(code: string) {
 					body.replaceWith(t.blockStatement([]));
 				}
 			} catch (e) {
-				// Again, if inside is not supported
+				console.log("Cannot transform while statement: " + e);
 			}
 		},
-		// Transform if (a) { b } else { c } into a ? b : c if possible
 		IfStatement(path) {
-			try {
-				let consequent = path.get("consequent");
-				let alternate = path.get("alternate");
-				let test = path.get("test");
+			let consequent = path.get("consequent");
+			let alternate = path.get("alternate") as any;
+			let test = path.get("test");
 
-				// Basically move the body statements into the update part by adding "comma" operators
-				// and then remove the body statements
+			try {
+				// Transform if (a) { b } else { c } into a ? b : c if possible
 				if (consequent.isBlockStatement() && alternate.isBlockStatement()) {
 					let newTest = test.node;
 					let newConsequent = consequent.node.body.map((statement) => (statement as any).expression);
-					let newAlternate = alternate.node.body.map((statement) => (statement as any).expression);
+					let newAlternate = alternate.node.body.map((statement: any) => (statement as any).expression);
 					path.replaceWith(t.expressionStatement(t.conditionalExpression(newTest, t.sequenceExpression(newConsequent), t.sequenceExpression(newAlternate))));
+					return;
 				}
 			} catch (e) {
-				// Ignore
+				console.log("Cannot transform if/else ternary: " + e);
+			}
+
+			try {
+				// Transform if (a) { x = y } into x = a ? y : x if possible
+				if (consequent.isBlockStatement() && !alternate.isBlockStatement()) {
+					// Make sure we only have one statement in the consequent
+					if (consequent.node.body.length !== 1) {
+						throw new Error("Expected one statement in consequent");
+					}
+
+					// Find the variable assignment
+					let variableAssignment = consequent.node.body[0];
+					if (!t.isExpressionStatement(variableAssignment)) {
+						throw new Error("Expected expression statement");
+					}
+
+					// Find the assigned expression
+					let assignedExpression = (variableAssignment.expression as any);
+
+					path.replaceWith(
+						t.assignmentExpression("=",
+							assignedExpression.left,
+							t.conditionalExpression(test.node, assignedExpression.right, assignedExpression.left)
+						),
+					);
+					return;
+				}
+			} catch (e) {
+				console.log("Cannot transform if assignment statement: " + e);
 			}
 		}
 	});
@@ -77,3 +106,4 @@ export function transformCode(code: string) {
 
 	return transformedCode;
 }
+

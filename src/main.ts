@@ -40,7 +40,21 @@ function binarySearch(arr, target) {
   }
   return -1
 }
+
+function maxSubArray(arr) {
+  let max = -Infinity
+  let sum = 0
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i]
+    max = Math.max(max, sum)
+    if (sum < 0) {
+      sum = 0
+    }
+  }
+  return max
+}
 `
+
 
 const code = localStorage.getItem('code') || exampleCode;
 

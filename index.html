@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vite + TS</title>
+  <title>funloop - xarantolus</title>
   <script>
     // These fix two very weird errors in @babel/generator when using it in the browser
     window["process"] = {
@@ -19,7 +19,12 @@
 
 <body>
   <div id="app">
-    <h1>This is a pretty cool website.</h1>
+    <h1>Weird loop transformations</h1>
+    <noscript>
+      <p>
+        This page requires JavaScript to work. Please enable it and reload the page.
+      </p>
+    </noscript>
     <br />
 
     <div id="editor"></div>
@@ -27,6 +32,9 @@
     <br />
 
     <button id="optimize" class="button">Optimize code!</button>
+    <p>
+      The source for this project is available on <a href="https://github.com/xarantolus/funloop" rel="noopener noreferrer">GitHub</a>.
+    </p>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
