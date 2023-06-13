@@ -22,7 +22,7 @@ export function transformCode(code: string) {
 					let newUpdate = body.node.body.map((statement) => (statement as any).expression);
 					newUpdate.push(update.node);
 					update.replaceWith(t.expressionStatement(t.sequenceExpression(newUpdate)));
-					body.replaceWith(t.blockStatement([]));
+					body.replaceWith(t.emptyStatement());
 				}
 			} catch (e) {
 				// Some code is not supported (e.g. if statements in a for loop body)
@@ -40,7 +40,7 @@ export function transformCode(code: string) {
 					let newTest = body.node.body.map((statement) => (statement as any).expression);
 					newTest.push(path.node.test);
 					path.node.test = t.sequenceExpression(newTest);
-					body.replaceWith(t.blockStatement([]));
+					body.replaceWith(t.emptyStatement());
 				}
 			} catch (e) {
 				console.log("Cannot transform while statement: " + e);
@@ -95,14 +95,12 @@ export function transformCode(code: string) {
 		}
 	});
 
-
-
 	const transformedCode = generate(ast, {
 		// Basically, we want to keep the original formatting
 		// and only change the code that we need to change
 		comments: true,
 		retainLines: false,
-	}).code;
+	}, code).code;
 
 	return transformedCode;
 }

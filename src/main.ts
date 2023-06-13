@@ -24,7 +24,6 @@ const exampleCode = `function strlen(str) {
   }
   return len
 }
-
 function binarySearch(arr, target) {
   let l = 0
   let r = arr.length - 1
@@ -40,7 +39,6 @@ function binarySearch(arr, target) {
   }
   return -1
 }
-
 function maxSubArray(arr) {
   let max = -Infinity
   let sum = 0
