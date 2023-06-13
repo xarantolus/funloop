@@ -11,6 +11,20 @@ export function transformCode(code: string) {
 	// Basically transform for (let i = 0; i < 10; i++) { console.log(i); }
 	// into for (let i = 0; i < 10; console.log(i), i++);
 	traverse(ast, {
+		// Transform var, let, const by removing the declaration and replacing it with an assignment
+		VariableDeclaration(path) {
+			let declarations = path.get("declarations");
+
+			// Replace the declaration with an assignment
+			let newDeclarations = declarations.map((declaration) => {
+				let id = declaration.get("id");
+				let init = declaration.get("init");
+				return t.expressionStatement(t.assignmentExpression("=", id.node, init.node as any));
+			});
+
+			// Replace the declaration with the assignment
+			path.replaceWithMultiple(newDeclarations);
+		},
 		ForStatement(path) {
 			try {
 				let body = path.get("body");
@@ -30,20 +44,35 @@ export function transformCode(code: string) {
 			}
 		},
 		WhileStatement(path) {
+			// Basically transform while (a) { b } into while (a && (b, true));
 			try {
 				let body = path.get("body");
-
+				let test = path.get("test");
 				// Basically move the body statements into the () part
 				// and then remove the body statements
 				if (body.isBlockStatement()) {
-					// Append body to test with a sequence expression
-					let newTest = body.node.body.map((statement) => (statement as any).expression);
-					newTest.push(path.node.test);
-					path.node.test = t.sequenceExpression(newTest);
+					let newBody = body.node.body.map((statement) => (statement as any).expression);
+					newBody.push(t.booleanLiteral(true)); // could also any other truthy value, maybe think of something better?
+					test.replaceWith(t.logicalExpression("&&", path.node.test, t.sequenceExpression(newBody)));
 					body.replaceWith(t.emptyStatement());
 				}
 			} catch (e) {
 				console.log("Cannot transform while statement: " + e);
+			}
+		},
+		DoWhileStatement(path) {
+			// Transform do { a } while (b) into while (a, b);
+			try {
+				let body = path.get("body");
+				let test = path.get("test");
+				if (body.isBlockStatement()) {
+					let newBody = body.node.body.map((statement) => (statement as any).expression);
+					path.replaceWith(t.whileStatement(t.sequenceExpression(newBody.concat(test.node)), t.emptyStatement()));
+					body.replaceWith(t.emptyStatement());
+				}
+			}
+			catch (e) {
+				console.log("Cannot transform do while statement: " + e);
 			}
 		},
 		IfStatement(path) {

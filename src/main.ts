@@ -51,8 +51,27 @@ function maxSubArray(arr) {
   }
   return max
 }
+function insertionSort(arr) {
+  for (let i = 1; i < arr.length; i++) {
+    let t = arr[i];
+    let j = i - 1;
+    while (j >= 0 && arr[j] > t) {
+      arr[j + 1] = arr[j]
+      j--
+    }
+    arr[j+1] = t
+  }
+  return arr;
+}
+function sumDigits(n) {
+  let sum = 0;
+  do {
+    sum += n % 10;
+    n = Math.floor(n / 10);
+  } while (n > 0);
+  return sum;
+}
 `
-
 
 const code = localStorage.getItem('code') || exampleCode;
 
