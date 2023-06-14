@@ -13,17 +13,27 @@ export function transformCode(code: string) {
 	traverse(ast, {
 		// Transform var, let, const by removing the declaration and replacing it with an assignment
 		VariableDeclaration(path) {
-			let declarations = path.get("declarations");
+			try {
+				let declarations = path.get("declarations");
 
-			// Replace the declaration with an assignment
-			let newDeclarations = declarations.map((declaration) => {
-				let id = declaration.get("id");
-				let init = declaration.get("init");
-				return t.expressionStatement(t.assignmentExpression("=", id.node, init.node as any));
-			});
+				// Replace the declaration with an assignment
+				let newDeclarations = [];
 
-			// Replace the declaration with the assignment
-			path.replaceWithMultiple(newDeclarations);
+				for (let dec of declarations) {
+					let id = dec.get("id");
+					let init = dec.get("init");
+
+					// Things like "let x" just get removed
+					if (init.node) {
+						newDeclarations.push(t.expressionStatement(t.assignmentExpression("=", id.node, init.node as any)));
+					}
+				}
+
+				// Replace the declaration with the assignment
+				path.replaceWithMultiple(newDeclarations);
+			} catch (e) {
+				console.log("Cannot transform variable declaration: " + e);
+			}
 		},
 		ForStatement(path) {
 			try {
@@ -73,6 +83,34 @@ export function transformCode(code: string) {
 			}
 			catch (e) {
 				console.log("Cannot transform do while statement: " + e);
+			}
+		},
+		ConditionalExpression(path) {
+			// For ternary operators, we check if they do something like a ? (x = y) : (x = z) and transform it into x = a ? y : z
+			try {
+				let consequent = path.get("consequent");
+				let alternate = path.get("alternate");
+				let test = path.get("test");
+
+				// Transform a ? (x = y) : (x = z) into x = a ? y : z if possible
+				if (consequent.isAssignmentExpression() && alternate.isAssignmentExpression()) {
+					let consequentAssignment = consequent.node;
+					let alternateAssignment = alternate.node;
+					let leftAssignment = consequentAssignment.left;
+					let rightAssignment = alternateAssignment.left;
+					// Same variable being assigned to
+					if (generate(leftAssignment).code === generate(rightAssignment).code) {
+						path.replaceWith(
+							t.assignmentExpression("=",
+								leftAssignment,
+								t.conditionalExpression(test.node, consequentAssignment.right, alternateAssignment.right)
+							),
+						);
+						return;
+					}
+				}
+			} catch (e) {
+				console.log("Cannot transform ternary: " + e);
 			}
 		},
 		IfStatement(path) {
